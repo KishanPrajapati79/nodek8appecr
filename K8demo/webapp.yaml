@@ -1,0 +1,122 @@
+# # for deployment and service of mongo
+# apiVersion: apps/v1
+# # kind, blueprint for pods
+# kind: Deployment
+# metadata:
+#   name: webapp-deployment
+#   # labels are key value pair that are attached to K8s resources
+#   labels:
+#     app: webapp
+# spec:
+#   replicas: 1
+#   # selector identify a set of resources i.e all the pods that match to nginx label belongs to this deployment
+#   selector:
+#     matchLabels:
+#       app: webapp
+#   # configuration of pod, has its own metdata and spec section
+#   template:
+#     metadata:
+#       labels:
+#         app: webapp
+#     spec:
+#       containers:
+#       - name: webapp
+#         # image: nanajanashia/k8s-demo-app:v1.0
+#         image: kishanpra/myapp_node:v1.6
+#         ports:
+#         - containerPort: 3000
+#         env:
+#         imagePullSecrets:
+#         - name: dockerhub-secret
+#         - name: USER_NAME
+#           valueFrom:
+#             secretKeyRef:
+#               name: mongo-secret
+#               key: mongo-user
+#         - name: USER_PWD
+#           valueFrom:
+#             secretKeyRef:
+#               name: mongo-secret
+#               key: mongo-password
+#         - name: DB_URL
+#           valueFrom:
+#             configMapKeyRef:
+#               name: mongo-config
+#               key: mongo-url
+# ---
+# # --- for multiple yaml configurations within one file
+# # service is used to expose a network app that is working on one or more pods
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: webapp-service
+# spec:
+#   # Type, making it an external service to access from browser
+#   type: NodePort
+#   selector:
+#     app: webapp
+#   ports:
+#     - protocol: TCP
+#       #service port 
+#       port: 3000
+#       # targetport tells to forward the service to which container ports 
+#       targetPort: 3000
+#       # exposes the service on each node's IP at a static port must be between 30000-32767
+#       nodePort: 30100
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment
+  labels:
+    app: webapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+      - name: webapp
+        # image: kishanpra/myapp_node:v1.9
+        # image: kishanpra/mynodeappk8:v1.0
+        # image: kishanpra/mynodeappk8:v2.0
+        # image: kishanpra/mynodeappk8:latest
+        # image: 654654389443.dkr.ecr.ap-south-1.amazonaws.com/mynodek8appecr:latest
+        image: public.ecr.aws/w3i0n9m9/nodek8appecr:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: USER_NAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-user
+        - name: USER_PWD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-password 
+        - name: DB_URL
+          valueFrom:
+            configMapKeyRef:
+              name: mongo-config
+              key: mongo-url
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service
+spec:
+  type: NodePort
+  selector:
+    app: webapp
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+      nodePort: 30100

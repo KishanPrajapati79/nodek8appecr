@@ -1,0 +1,53 @@
+# for deployment and service of mongo
+apiVersion: apps/v1
+# kind, blueprint for pods
+kind: Deployment
+metadata:
+  name: mongo-deployment
+  # labels are key value pair that are attached to K8s resources
+  labels:
+    app: mongo
+spec:
+  replicas: 1
+  # selector identify a set of resources i.e all the pods that match to nginx label belongs to this deployment
+  selector:
+    matchLabels:
+      app: mongo
+  # configuration of pod, has its own metdata and spec section
+  template:
+    metadata:
+      labels:
+        app: mongo
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:7.0
+        ports:
+        - containerPort: 27017
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-user
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongo-secret
+              key: mongo-password
+
+---
+# --- for multiple yaml configurations within one file
+# service is used to expose a network app that is working on one or more pods
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-service
+spec:
+  selector:
+    app: mongo
+  ports:
+    - protocol: TCP
+      port: 27017
+      # targetport tells to forward the service to which container ports 
+      targetPort: 27017
