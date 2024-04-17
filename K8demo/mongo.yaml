@@ -35,6 +35,14 @@ spec:
             secretKeyRef:
               name: mongo-secret
               key: mongo-password
+        volumeMounts:
+          - mountPath: /data/db
+            name: mongo-vol
+      volumes:
+        - name: mongo-vol
+          persistentVolumeClaim:
+            claimName: host-pvc
+
 
 ---
 # --- for multiple yaml configurations within one file
