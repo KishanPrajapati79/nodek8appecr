@@ -15,32 +15,53 @@ pipeline {
             steps {
                 dir('DockerWebappK8/app') {
                     sh 'npm install'
-                    // sh 'npm test'
                 }
             }
         }
+        stage('OWASP Scan') {
+            steps {
+                dependencyCheck additionalArguments: '--scan ./ ', odcInstallation: 'DC'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.html'
+            }
+        }
         
-        // stage('Building and pushing Docker image to AWS EKS') {
-        //     steps {
-        //         // Build Docker image using Dockerfile
-        //         dir('DockerWebappK8') {
-        //             script {
-        //                 withCredentials([[
-        //                     $class: 'AmazonWebServicesCredentialsBinding',
-        //                     credentialsId: 'awsecraccess',
-        //                     accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-        //                     secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-        //                 ]]) {
-        //                         withDockerRegistry(credentialsId: '778b21cb-c4a2-4f65-9bc8-0792220228d1') {
-        //                             sh "aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/w3i0n9m9"
-        //                             sh "docker build -t public.ecr.aws/w3i0n9m9/nodek8appecr:latest ."
-        //                             sh "docker push public.ecr.aws/w3i0n9m9/nodek8appecr:latest"
-        //                         }
-        //                     }
-        //             }
-        //         }
-        //     }
-        // }
+        stage('Building and pushing Docker image to AWS ECR') {
+            steps {
+                // Build Docker image using Dockerfile
+                dir('DockerWebappK8') {
+                    script {
+                        withCredentials([[
+                            $class: 'AmazonWebServicesCredentialsBinding',
+                            credentialsId: 'awsecraccess',
+                            accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                        ]]) {
+                                withDockerRegistry(credentialsId: '778b21cb-c4a2-4f65-9bc8-0792220228d1') {
+                                    sh "aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/w3i0n9m9"
+                                    sh "docker build -t public.ecr.aws/w3i0n9m9/nodek8appecr:latest ."
+                                    sh "docker push public.ecr.aws/w3i0n9m9/nodek8appecr:latest"
+                                }
+                            }
+                    }
+                }
+            }
+        }
+        stage('Trivy Scan for docker image') {
+            steps {
+                withCredentials([
+                    file(credentialsId: 'html.tpl', variable: 'htmlTplFilePath')
+                ]) {
+                    script {
+                        def imageName = "public.ecr.aws/w3i0n9m9/nodek8appecr:latest"
+                        def templatePath = env.htmlTplFilePath
+                        def outputLocation = "trivy_report.html"
+                        sh """
+                        trivy image --format template --template "@${templatePath}" --output ${outputLocation} ${imageName}
+                        """
+                    }
+                }
+            }
+        }
         // stage('Deploy to Kubernetes') {
         //     steps {
         //         dir('K8demo') {
@@ -98,6 +119,16 @@ pipeline {
                     replyTo: 'jenkins@example.com',
                     mimeType: 'text/html'
                 )
+                archiveArtifacts artifacts: "trivy_report.html", fingerprint: true
+                
+                publishHTML (target: [
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: false,
+                    keepAll: true,
+                    reportDir: '.',
+                    reportFiles: 'trivy_report.html',
+                    reportName: 'Trivy Scan',
+                ])
             }
     }
 }
