@@ -62,32 +62,34 @@ pipeline {
                 }
             }
         }
-        // stage('Deploy to Kubernetes') {
-        //     steps {
-        //         dir('K8demo') {
-        //             withCredentials([
-        //                 file(credentialsId: 'k8cacert', variable: 'CA_CERT_PATH'),
-        //                 file(credentialsId: 'k8clientkey', variable: 'CLIENT_KEY_PATH'),
-        //                 file(credentialsId: 'k8clientcert', variable: 'CLIENT_CERT_PATH'),
-        //                 kubeconfigContent(credentialsId: 'k8configcopycopy', variable: 'KUBECONFIG_CONTENT')
-        //             ]) {
-        //                 script {
-        //                     def kubeconfig = env.KUBECONFIG_CONTENT
-        //                     kubeconfig = kubeconfig.replaceAll('/home/kishan/.minikube/ca.crt', env.CA_CERT_PATH)
-        //                     kubeconfig = kubeconfig.replaceAll('/home/kishan/.minikube/profiles/minikube/client.crt', env.CLIENT_CERT_PATH)
-        //                     kubeconfig = kubeconfig.replaceAll('/home/kishan/.minikube/profiles/minikube/client.key', env.CLIENT_KEY_PATH)
-        //                     writeFile file: 'kubeconfig', text: kubeconfig
-        //                     env.KUBECONFIG = 'kubeconfig'
-        //                     sh 'kubectl get pods'
-        //                     sh 'kubectl apply -f mongo-config.yaml'
-        //                     sh 'kubectl apply -f mongo-secret.yaml'
-        //                     sh 'kubectl apply -f mongo.yaml'
-        //                     sh 'kubectl apply -f webapp.yaml'
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        stage('Deploy to Kubernetes') {
+            steps {
+                dir('K8demo') {
+                    withCredentials([
+                        file(credentialsId: 'k8cacert', variable: 'CA_CERT_PATH'),
+                        file(credentialsId: 'k8clientkey', variable: 'CLIENT_KEY_PATH'),
+                        file(credentialsId: 'k8clientcert', variable: 'CLIENT_CERT_PATH'),
+                        kubeconfigContent(credentialsId: 'k8configcopycopy', variable: 'KUBECONFIG_CONTENT')
+                    ]) {
+                        script {
+                            def kubeconfig = env.KUBECONFIG_CONTENT
+                            kubeconfig = kubeconfig.replaceAll('/home/kishan/.minikube/ca.crt', env.CA_CERT_PATH)
+                            kubeconfig = kubeconfig.replaceAll('/home/kishan/.minikube/profiles/minikube/client.crt', env.CLIENT_CERT_PATH)
+                            kubeconfig = kubeconfig.replaceAll('/home/kishan/.minikube/profiles/minikube/client.key', env.CLIENT_KEY_PATH)
+                            writeFile file: 'kubeconfig', text: kubeconfig
+                            env.KUBECONFIG = 'kubeconfig'
+                            sh 'kubectl get pods'
+                            sh 'kubectl apply -f host-pv.yml'
+                            sh 'kubectl apply -f host-pvc.yml'
+                            sh 'kubectl apply -f mongo-config.yaml'
+                            sh 'kubectl apply -f mongo-secret.yaml'
+                            sh 'kubectl apply -f mongo.yaml'
+                            sh 'kubectl apply -f webapp.yaml'
+                        }
+                    }
+                }
+            }
+        }
         
     }
     post {
