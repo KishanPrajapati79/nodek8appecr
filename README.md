@@ -1,1 +1,1 @@
-Continuous integration and deployment of scalable containerised Node and Mongo web application on Kubernetes using Jenkins Pipeline, Docker, Github, AWS ECR and ngrok. Monitoring with Prometheus and Grafana.
+Continuous integration and deployment of scalable containerised Node and Mongo web application on Kubernetes using Jenkins Pipeline, Docker, Github, AWS ECR and ngrok. Monitoring with Prometheus and Grafana
